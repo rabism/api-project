@@ -12,6 +12,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using StocksAPI.Commands;
 using StocksAPI.Queries;
+using StocksAPI.Services;
 
 namespace StocksAPI.Controllers
 {
@@ -19,28 +20,30 @@ namespace StocksAPI.Controllers
     [Route("api/[controller]")]
     public class StockController : ControllerBase
     {
-        private IMediator _mediator;
+        private readonly IMediator _mediator;
+        private readonly IStockUpdateSenderService stockUpdateSenderService;
        private readonly ILogger<StockController> _logger;
-       public StockController(ILogger<StockController> logger,IMediator mediator)
+       public StockController(ILogger<StockController> logger,IMediator mediator,IStockUpdateSenderService _stockUpdateSenderService)
         {
             _logger = logger;
             _mediator=mediator;
+            stockUpdateSenderService=_stockUpdateSenderService;
         }
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost]
         [Route("{companycode}")]
-        public async Task<IActionResult> Post([FromBody] StockDetail stock,string companycode)
+        public async Task<IActionResult> Post([FromBody] StockDetail stock, string companycode)
         {
             try
             {
-                /*
+
                 var company = await _mediator.Send(new CompanySearchByCodeQuery()
                 {
                     CompanyCode = companycode
-                   
+
                 });
 
-                if(company==null || !company.Any())
+                if (company == null || !company.Any())
                 {
                     return BadRequest($"Company code {companycode} not registered!!");
                 }
@@ -48,7 +51,7 @@ namespace StocksAPI.Controllers
                 var companyExchange = await _mediator.Send(new CompanySearchByCodeAndExchageQuery()
                 {
                     CompanyCode = companycode,
-                    ExchangeName=stock.ExchangeName
+                    ExchangeName = stock.ExchangeName
 
                 });
 
@@ -56,15 +59,15 @@ namespace StocksAPI.Controllers
                 {
                     return BadRequest($"Exchange {stock.ExchangeName} not listed!!");
                 }
-*/
-                
-                Stock _stock = MapToEntity(stock,companycode);
+
+                Stock _stock = MapToEntity(stock, companycode);
                 AddStockCommand command = new AddStockCommand
                 {
                     Stock = _stock
                 };
                 await _mediator.Send(command);
-               // messageProducer.WriteMessage("StockInfo", _stock);
+                Task senderService = new Task(() => stockUpdateSenderService.SendAddStock(_stock.CompanyCode, _stock.ExchangeName, _stock.StockPrice));
+                senderService.Start();
                 return CreatedAtAction(nameof(Post), companycode);
             }
             catch (Exception ex)
@@ -72,7 +75,6 @@ namespace StocksAPI.Controllers
                 _logger.LogError($"Error in Adding the stock: {ex.Message}");
                 return StatusCode(500);
             }
-
         }
 
         private Stock MapToEntity(StockDetail stock,string companyCode)

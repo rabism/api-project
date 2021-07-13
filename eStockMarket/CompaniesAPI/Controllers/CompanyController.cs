@@ -19,10 +19,12 @@ namespace CompaniesAPI.Controllers
     {
         readonly ICompanyService service;
         readonly ILogger<CompanyController> _logger;
-        public CompanyController(ICompanyService companyService, ILogger<CompanyController> logger)
+        readonly ICompanyUpdateSenderService updateSenderService;
+        public CompanyController(ICompanyService companyService, ILogger<CompanyController> logger, ICompanyUpdateSenderService _updateSenderService)
         {
             service = companyService;
             _logger = logger;
+            updateSenderService=_updateSenderService;
         }
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost]
@@ -33,6 +35,9 @@ namespace CompaniesAPI.Controllers
                 _logger.LogInformation($"Adding a new Company {company}");
                 Company _company = MapToCompany(company);
                 service.Register(_company);
+                _logger.LogInformation($"sending message to queue");
+                Task senderService = new Task(() => updateSenderService.SendAddCompany(_company));
+                senderService.Start();
                 return Created("", company);
             }
             catch (CompanyAlreadyExistsException pae)
@@ -55,6 +60,9 @@ namespace CompaniesAPI.Controllers
             {
                 _logger.LogInformation($"Removing the company {companycode}");
                 service.Delete(companycode);
+                _logger.LogInformation($"sending message to queue");
+                Task senderService = new Task(() => updateSenderService.SendDeleteCompany(companycode));
+                senderService.Start();
                 return NoContent();
             }
             catch (CompanyNotFoundException pnf)

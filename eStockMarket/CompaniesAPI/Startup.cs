@@ -1,5 +1,6 @@
 using AutoWrapper;
 using CompaniesAPI.Entity;
+using CompaniesAPI.Models;
 using CompaniesAPI.Repository;
 using CompaniesAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -52,8 +53,8 @@ namespace CompaniesAPI
                 connectionString = string.Format("server={0};database={1};User ID={2};Password={3};", server, database, userId, password);
             }
             services.AddDbContext<CompanyDBContext>(o => o.UseSqlServer(connectionString));
-            services.AddScoped<ICompanyService, CompanyService>();
-            services.AddScoped<ICompanyRepository, CompanyRepository>();
+            services.AddTransient<ICompanyService, CompanyService>();
+            services.AddTransient<ICompanyRepository, CompanyRepository>();
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme);
             services.AddCors(options =>
             {
@@ -84,7 +85,24 @@ namespace CompaniesAPI
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Company API", Version = "v1" });
             });
-            services.AddHostedService<MessageReceiver>();
+
+            string RabbitHost= Environment.GetEnvironmentVariable("RABBIT_HOST");
+            string RabbitAddQueue = Environment.GetEnvironmentVariable("RABBIT_ADD_COMPANY_QUEUE");
+            string RabbitDeleteQueue = Environment.GetEnvironmentVariable("RABBIT_DELETE_COMPANY_QUEUE");
+            string RabbitAddStockQueue = Environment.GetEnvironmentVariable("RABBIT_ADD_STOCK_QUEUE");
+            string RabbitUserName= Environment.GetEnvironmentVariable("RABBIT_USERNAME");
+            string RabbitPassword = Environment.GetEnvironmentVariable("RABBIT_PASSWORD");
+            RabbitConfiguration  configuration =new RabbitConfiguration{
+                Hostname=RabbitHost,
+                AddCompanyQueueName =RabbitAddQueue,
+                DeleteCompanyQueueName=RabbitDeleteQueue,
+                AddStockQueueName=RabbitAddStockQueue,
+                UserName=RabbitUserName,
+                Password=RabbitPassword
+            };
+            services.AddSingleton<RabbitConfiguration>(configuration);
+            services.AddTransient<ICompanyUpdateSenderService, CompanyUpdateSenderService>();
+            services.AddHostedService<StockUpdateConsumeService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

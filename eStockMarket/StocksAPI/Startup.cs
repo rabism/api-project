@@ -1,4 +1,6 @@
 using AutoWrapper;
+using StocksAPI.Models;
+using StocksAPI.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -67,15 +69,26 @@ namespace StocksAPI
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Stock API", Version = "v1" });
             });
-            //Kafka configuration binding
-           // string kafkaHost = Environment.GetEnvironmentVariable("KAFKA_HOST");
-            //string kafkaPort = Environment.GetEnvironmentVariable("KAFKA_PORT");
-            //var producerConfig = new ProducerConfig
-            //{
-              //  BootstrapServers = string.Format("{0}:{1}", kafkaHost, kafkaPort)
-            //};
-            //services.AddSingleton<ProducerConfig>(producerConfig);
+            string RabbitHost= Environment.GetEnvironmentVariable("RABBIT_HOST");
+            string RabbitAddQueue = Environment.GetEnvironmentVariable("RABBIT_ADD_COMPANY_QUEUE");
+            string RabbitDeleteQueue = Environment.GetEnvironmentVariable("RABBIT_DELETE_COMPANY_QUEUE");
+            string RabbitAddStockQueue = Environment.GetEnvironmentVariable("RABBIT_ADD_STOCK_QUEUE");
+            string RabbitUserName= Environment.GetEnvironmentVariable("RABBIT_USERNAME");
+            string RabbitPassword = Environment.GetEnvironmentVariable("RABBIT_PASSWORD");
+            RabbitConfiguration  configuration =new RabbitConfiguration{
+                Hostname=RabbitHost,
+                AddCompanyQueueName =RabbitAddQueue,
+                DeleteCompanyQueueName=RabbitDeleteQueue,
+                AddStockQueueName=RabbitAddStockQueue,
+                UserName=RabbitUserName,
+                Password=RabbitPassword
+            };
+            services.AddSingleton<RabbitConfiguration>(configuration);
             services.AddMediatR(Assembly.GetExecutingAssembly());
+            services.AddScoped<IStockUpdateSenderService, StockUpdateSenderService>();
+            services.AddHostedService<CompanyAddConsumeService>();
+            services.AddHostedService<CompanyDeleteConsumeService>();
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

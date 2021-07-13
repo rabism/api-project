@@ -57,6 +57,11 @@ namespace CompaniesAPI.Services
         {
            return repository.IsCompanyExists(companyCode);
         }
+
+        public void UpdateCompanyExchangeCurrentPrice(string companyCode,string  exchangeName,decimal currentStockPrice)
+        {
+            repository.UpdateCompanyExchangeCurrentPrice(companyCode,exchangeName,currentStockPrice);
+        }
         /*
         public void UpdateCompanyStock(Stock stock)
         {

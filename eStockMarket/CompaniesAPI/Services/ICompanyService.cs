@@ -15,5 +15,6 @@ namespace CompaniesAPI.Services
         IReadOnlyList<Company> GetAllCompanies();
          bool IsExchangeExists(List<string> exchanges);
          bool IsCompanyExists(string companyCode);
+        void UpdateCompanyExchangeCurrentPrice(string companyCode,string  exchangeName,decimal currentStockPrice);
     }
 }

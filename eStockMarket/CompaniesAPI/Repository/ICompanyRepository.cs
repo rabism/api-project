@@ -13,8 +13,7 @@ namespace CompaniesAPI.Repository
         Company GetCompanyByCode(string companyCode);
         IReadOnlyList<Company> GetAllCompanies();
         bool IsCompanyExists(string companyCode);
-
         bool IsExchangeExists(List<string> exchanges);
-        //void UpdateCompanyStock(Stock stock);
+        void UpdateCompanyExchangeCurrentPrice(string companyCode,string  exchangeName,decimal currentStockPrice);
     }
 }

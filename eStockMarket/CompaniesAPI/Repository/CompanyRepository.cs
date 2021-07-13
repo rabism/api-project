@@ -31,7 +31,7 @@ namespace CompaniesAPI.Repository
             return comp;
         }
         private List<CompanyExchange> GetCompanyExchangeByCode(string companyCode){
-            return _dbContext.CompanyExchanges.Where(x=>x.CompanyCode.Equals(companyCode,StringComparison.OrdinalIgnoreCase)).ToList();
+            return _dbContext.CompanyExchanges.Where(x=>x.CompanyCode==companyCode).ToList();
         }
         public Company GetCompanyByCode(string companyCode)
         {
@@ -52,6 +52,16 @@ namespace CompaniesAPI.Repository
             int queruCount= _dbContext.Exchanges.Where(x=>exchanges.Contains(x.ExchangeName.ToLower())).Count();
             return exchanges.Count == queruCount;
         }
+
+        public void UpdateCompanyExchangeCurrentPrice(string companyCode,string  exchangeName,decimal currentStockPrice){
+            var item=_dbContext.CompanyExchanges.Where(x=>x.CompanyCode==companyCode && x.ExchangeName==exchangeName).FirstOrDefault();
+            if(item!=null){
+                item.StockPrice=currentStockPrice;
+               _dbContext.CompanyExchanges.Update(item);
+               _dbContext.SaveChanges();
+            }
+        }
+        
         /*
         public void UpdateCompanyStock(Stock stock)
         {
